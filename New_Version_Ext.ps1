@@ -29,7 +29,7 @@ $store.Close()
 
 # Sign script
 try{
-Set-AuthenticodeSignature -FilePath $File_Full_Path -Certificate $Cert
+Set-AuthenticodeSignature -FilePath $File_Full_Path -Certificate $Cert -ErrorAction Stop
 ([System.Windows.Forms.MessageBox]::Show("Script $FullPath signed succesfully", "Done", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information))
 } catch {
 ([System.Windows.Forms.MessageBox]::Show("Unknown error occurred", "Error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error))
@@ -111,6 +111,8 @@ $Main_Form_FN_Label.Size = New-Object System.Drawing.Size(150,30)
 $Main_Form_FN_Label.Text = "Script:"
 $Main_Form.Controls.Add($Main_Form_FN_TB)
 }
+} else {
+$Main_Form.Controls.Remove($Main_Form_FN_TB)
 }
 })
 
@@ -135,35 +137,3 @@ Sign-Script -File_Full_Path $FullPath -File_Cut_Path $FilePath -Cert_Name $FileN
 
 $Main_Form.ShowDialog()
 
-
-# SIG # Begin signature block
-# MIIFagYJKoZIhvcNAQcCoIIFWzCCBVcCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
-# gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQU0DJtcIu0F/3eJL8ma85Cydlk
-# C1ugggMGMIIDAjCCAeqgAwIBAgIQepp6/cbp5b5OxHHJUZ01OTANBgkqhkiG9w0B
-# AQsFADAZMRcwFQYDVQQDDA5QU0dDZXJ0aWZpY2F0ZTAeFw0yNTEwMjIwOTQ3MDBa
-# Fw0yNjEwMjIxMDA3MDBaMBkxFzAVBgNVBAMMDlBTR0NlcnRpZmljYXRlMIIBIjAN
-# BgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAr/eQ7sJkc3nswsxff3TACQ603CIH
-# EdEqItfaWJQzROilaXWXSktgXN7GjDAcjsoCRJstUnU57KjopgWfj+HazAfY7F6N
-# mpTLJ1P4VoNqmLhLCJ7EySSFfYNDaeyuOeMSJI3l889yhRQMCCnQqhtBkZ1pJnM/
-# 4eAX0WoDSKb1vDnXNNvB4MTcGihokralFab/Ba6n7fi9t1NTrgKJYgbJTAQFQt/O
-# wsVEOQiD3Kif3jy9LXpGW2CIcGJClBljyVMlmYmCfRQ9ZweOE4h212R3UWcxuoxh
-# znRG+WPj5SWhnpvSasEGLmJAVjUGKlQ3QORZNPiWiWRgXhvX9GqSxCyG2QIDAQAB
-# o0YwRDAOBgNVHQ8BAf8EBAMCB4AwEwYDVR0lBAwwCgYIKwYBBQUHAwMwHQYDVR0O
-# BBYEFBtAbZHPZy7a0OlL2qOWjMPp3mpeMA0GCSqGSIb3DQEBCwUAA4IBAQBPev0P
-# uAdc/ENCGp+YrY0pgUZaUsXDBkezz/19D0VtB8QW8DGAOB7AqTo2YU3EeTlJc5US
-# jrBlT7u5CfGprNeLiTgEEDTJm/pF8KsmS4W4XygI7rh85L3WcE6thlblgjZWCpKq
-# YB2Fzc18cIdtKcjuC8NmHyqdlgKlP5cXnB+tG+DqP1yq5a5JYP5Y1CUCHAghmd7Q
-# ePUD7GGzCFIIF3MhjgxcmgmPW1bzAXq5kl/24nEAEr+I6D8dUJX4jgUWVznC0fRX
-# SJqyTYXQXGovyXkpsrreAL5Say1Ob9o7Yg0GXFYR3kuEZYLfO04InBEI5tidCNH9
-# 8Yasi8ZGGSVz6B4uMYIBzjCCAcoCAQEwLTAZMRcwFQYDVQQDDA5QU0dDZXJ0aWZp
-# Y2F0ZQIQepp6/cbp5b5OxHHJUZ01OTAJBgUrDgMCGgUAoHgwGAYKKwYBBAGCNwIB
-# DDEKMAigAoAAoQKAADAZBgkqhkiG9w0BCQMxDAYKKwYBBAGCNwIBBDAcBgorBgEE
-# AYI3AgELMQ4wDAYKKwYBBAGCNwIBFTAjBgkqhkiG9w0BCQQxFgQUwSZejZP2MOA6
-# ij1wbkynXxPdhA8wDQYJKoZIhvcNAQEBBQAEggEAV+g3ZBru4He25vWQOH6NK4Iw
-# BNQBkIkyPkk4tBnGgBeWoyemn5mlSFIRHwkmnY6+HDdOtn8B/TVtMYkqg9UdMkbT
-# Ee/Fgp6JYSpxDZmCuX1gko3StyQk8QJ42MTwj4Zgwp7xyb7Qr3PUPVSrn822MFSp
-# YHnqYm57xhLEzeIFuFUhxhmHyLdOINMlAEJbK/qYi++umCyIOLv9J1rBthQAyuAq
-# GF356zVCeOrcTqe33rHPypqfMC4zSsGD4MbfyW4KDh37gHR8LPOF7RbF91k+fpcl
-# V+dMXzt5t1S+fqB3Avm6JwNZ2sLeBhOCi6Zi5ms+KTl/rAjus7xq9CslOkT5WA==
-# SIG # End signature block
