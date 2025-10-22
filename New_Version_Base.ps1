@@ -1,5 +1,6 @@
 ﻿Add-Type -AssemblyName system.windows.forms
 Add-Type -AssemblyName system.drawing
+Add-Type -AssemblyName system.io
 
 if ((Test-Path -Path c:\PSSG) -eq $false){
 New-Item -Path c:\ -ItemType directory -Name PSSG -Confirm:$false
@@ -63,36 +64,17 @@ $Main_Form.Controls.Add($Main_Form_Location_TB)
 
 $Main_Form_FN_Label = New-Object System.Windows.Forms.Label
 $Main_Form_FN_Label.Font = New-Object System.Drawing.Font("arial", 14)
-$Main_Form_FN_Label.Location = New-Object System.Drawing.Point(20,200)
-$Main_Form_FN_Label.Text = "Script name:"
-$Main_Form_FN_Label.Size = New-Object System.Drawing.Size(150,30)
+$Main_Form_FN_Label.Location = New-Object System.Drawing.Point(20,220)
+$Main_Form_FN_Label.Text = "No powershell files found"
+$Main_Form_FN_Label.Size = New-Object System.Drawing.Size(300,30)
 $Main_Form.Controls.Add($Main_Form_FN_Label)
-$Main_Form_FN_TB = New-Object System.Windows.Forms.TextBox
+$Main_Form_FN_TB = New-Object System.Windows.Forms.ComboBox
 $Main_Form_FN_TB.Size = New-Object System.Drawing.Size(250)
-$Main_Form_FN_TB.Location = New-Object System.Drawing.Point(180,200)
+$Main_Form_FN_TB.Location = New-Object System.Drawing.Point(180,220)
 $Main_Form_FN_TB.Font = New-Object System.Drawing.Font("arial", 16)
-$Main_Form_FN_TB.Text = "E.G Lock_Users"
-$Main_Form.Controls.Add($Main_Form_FN_TB)
+#$Main_Form.Controls.Add($Main_Form_FN_TB)
 
-$Main_Form_FE_Label = New-Object System.Windows.Forms.Label
-$Main_Form_FE_Label.Font = New-Object System.Drawing.Font("arial", 14)
-$Main_Form_FE_Label.Location = New-Object System.Drawing.Point(20,230)
-$Main_Form_FE_Label.Text = "File extension:"
-$Main_Form_FE_Label.Size = New-Object System.Drawing.Size(120,50)
-$Main_Form.Controls.Add($Main_Form_FE_Label)
-$Main_Form_FE_TB = New-Object System.Windows.Forms.ComboBox
-$Main_Form_FE_TB.Size = New-Object System.Drawing.Size(120,60)
-$Main_Form_FE_TB.Items.Add(".ps1")
-$Main_Form_FE_TB.Items.Add(".psm1")
-$Main_Form_FE_TB.Items.Add(".psd1")
-$Main_Form_FE_TB.Items.Add(".ps1xml")
-$Main_Form_FE_TB.Items.Add(".psc1")
-$Main_Form_FE_TB.Items.Add(".pssc")
-$Main_Form_FE_TB.Items.Add(".psrc")
-$Main_Form_FE_TB.Items.Add(".cdxml")
-$Main_Form_FE_TB.Location = New-Object System.Drawing.Point(180,250)
-$Main_Form_FE_TB.Font = New-Object System.Drawing.Font("arial", 16)
-$Main_Form.Controls.Add($Main_Form_FE_TB)
+
 
 $Main_Form_PFXPassword_Label = New-Object System.Windows.Forms.Label
 $Main_Form_PFXPassword_Label.Font = New-Object System.Drawing.Font("arial", 14)
@@ -114,20 +96,37 @@ $Main_Form_Button.Location = New-Object System.Drawing.Point(200,400)
 $Main_Form_Button.Size = New-Object System.Drawing.Size(100,40)
 $Main_Form.Controls.Add($Main_Form_Button)
 
+$Main_Form_Location_TB.add_textchanged({
+$Chosen_Directory = $Main_Form_Location_TB.Text
+if(Test-Path -Path $Chosen_Directory){
+$Chosen_Directory_Content = Get-ChildItem -Path $Chosen_Directory | where {$_.Extension -in ".ps1", ".psm1", ".psd1", ".ps1xml", ".psc1", ".pssc", ".psrc", ".cdxml"}
+if($Chosen_Directory_Content -eq $null){
+Write-Host ""
+} else {
+foreach ($File in $Chosen_Directory_Content){
+$File_Name = $File.name
+$Main_Form_FN_TB.Items.Add($File_Name)
+}
+$Main_Form_FN_Label.Size = New-Object System.Drawing.Size(150,30)
+$Main_Form_FN_Label.Text = "Script:"
+$Main_Form.Controls.Add($Main_Form_FN_TB)
+}
+}
+})
+
 $Main_Form_Button.add_click({
 
 $FilePath = $Main_Form_Location_TB.Text
-$FileName = $Main_Form_FN_TB.Text
-$FileExtension = $Main_Form_FE_TB.SelectedItem
+$FileName = $Main_Form_FN_TB.SelectedItem
 $PFXPasswordRaw = $Main_Form_PFXPassword_TB.Text
-$FullFileName = $FileName + $FileExtension
-$FullPath = $FilePath + "\" + $FileName + $FileExtension
+$FullPath = "$FilePath\$FileName"
+$FileNameNE = [System.IO.Path]::GetFileNameWithoutExtension($FullPath)
 $FullPathExists = Test-Path -Path $FullPath
 
-if ($FullPathExists -and $PFXPasswordRaw -notlike ""){
+if ($PFXPasswordRaw -notlike "" -and $FullPathExists -and $FileName -ne $null){
 $PFXPassword = ConvertTo-SecureString -AsPlainText $PFXPasswordRaw -Force
-Generate-Certificate -File_Path $FilePath -Cert_Name $FileName -PFXPassword $PFXPassword
-Sign-Script -File_Full_Path $FullPath -File_Cut_Path $FilePath -Cert_Name $FileName -PFXPassword $PFXPassword
+Generate-Certificate -File_Path $FilePath -Cert_Name $FileNameNE -PFXPassword $PFXPassword
+Sign-Script -File_Full_Path $FullPath -File_Cut_Path $FilePath -Cert_Name $FileNameNE -PFXPassword $PFXPassword
 } else {
 ([System.Windows.Forms.MessageBox]::Show("File or directory not found \ No password set", "Error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error))
 }
@@ -140,31 +139,31 @@ $Main_Form.ShowDialog()
 # SIG # Begin signature block
 # MIIFagYJKoZIhvcNAQcCoIIFWzCCBVcCAQExCzAJBgUrDgMCGgUAMGkGCisGAQQB
 # gjcCAQSgWzBZMDQGCisGAQQBgjcCAR4wJgIDAQAABBAfzDtgWUsITrck0sYpfvNR
-# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQUnWtbNTx43/hIpfZoj3JLUJWm
-# /i2gggMGMIIDAjCCAeqgAwIBAgIQPq5Lu7cXXIRBxhK8e28RTzANBgkqhkiG9w0B
-# AQsFADAZMRcwFQYDVQQDDA5QU0dDZXJ0aWZpY2F0ZTAeFw0yNTEwMTExOTI1MTZa
-# Fw0yNjEwMTExOTQ1MTZaMBkxFzAVBgNVBAMMDlBTR0NlcnRpZmljYXRlMIIBIjAN
-# BgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAtVigr+TEty/GhwEfwTGgQqDJuLuM
-# tG2z3HiVkby+Fa8IZjqBkKUv/vTzjVZMTH++ZFxZZfKgq3LqbE1yeSlaMTAxURIw
-# juEdxNghsIW++2RCa8FW16nSEJNtVPPhzZQU6YMB1knBAxYYd0yS5okQrs3apS66
-# 8RkJ1UbR2Zyl3YP45ssB3I0l30FNt2HfAESdjMhr8W6fNdVATjdcm94r3HwO/bxU
-# YZnQoNNEFLsvbDT/3/d/ZhNq/1G+CWYnZP6sLpY7De7f6tQDXeGkNyZFZ3KTdMax
-# qiEfTJzxxcpohrIScn27VKEU/48Z3JbRS7xn/HUq7QS8ayA8IPLVZSkJtQIDAQAB
+# AgEAAgEAAgEAAgEAAgEAMCEwCQYFKw4DAhoFAAQU0DJtcIu0F/3eJL8ma85Cydlk
+# C1ugggMGMIIDAjCCAeqgAwIBAgIQepp6/cbp5b5OxHHJUZ01OTANBgkqhkiG9w0B
+# AQsFADAZMRcwFQYDVQQDDA5QU0dDZXJ0aWZpY2F0ZTAeFw0yNTEwMjIwOTQ3MDBa
+# Fw0yNjEwMjIxMDA3MDBaMBkxFzAVBgNVBAMMDlBTR0NlcnRpZmljYXRlMIIBIjAN
+# BgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAr/eQ7sJkc3nswsxff3TACQ603CIH
+# EdEqItfaWJQzROilaXWXSktgXN7GjDAcjsoCRJstUnU57KjopgWfj+HazAfY7F6N
+# mpTLJ1P4VoNqmLhLCJ7EySSFfYNDaeyuOeMSJI3l889yhRQMCCnQqhtBkZ1pJnM/
+# 4eAX0WoDSKb1vDnXNNvB4MTcGihokralFab/Ba6n7fi9t1NTrgKJYgbJTAQFQt/O
+# wsVEOQiD3Kif3jy9LXpGW2CIcGJClBljyVMlmYmCfRQ9ZweOE4h212R3UWcxuoxh
+# znRG+WPj5SWhnpvSasEGLmJAVjUGKlQ3QORZNPiWiWRgXhvX9GqSxCyG2QIDAQAB
 # o0YwRDAOBgNVHQ8BAf8EBAMCB4AwEwYDVR0lBAwwCgYIKwYBBQUHAwMwHQYDVR0O
-# BBYEFLPFTJqSHgEgSTaNveXMMpbikWoVMA0GCSqGSIb3DQEBCwUAA4IBAQCOjhcb
-# cx58MmXd6vqqLzW3jeQKVJ973WerrEC9FBPg5BsDq9taCrzCDOkYSxIv8dUHc5m5
-# Uv7mR6VEUITec+AbFicH7GPg7YZsGL4nd2VAFlpX/wNi/Hd9vPbaZfK+2ulIGDpb
-# Y5xGI4FX0vAVvAmprLlQhKeBgqv3pftyXMX7zsTxYqb7e7kP59azsqbdHgxTwiZE
-# 5Dqrc7abH3cZbZZhNSBzVBa7vKs7e1DbZ/fPm3SAdZ0jTe02lwcELvfg/ERFT1w5
-# 4ptnjhDT8CcmcBA2FCHQ/iPw1DBB/a5o02ICA+EaPiZRBlSJTSvKVFBNMnyQmvwk
-# F8ed48npI0cfq3t7MYIBzjCCAcoCAQEwLTAZMRcwFQYDVQQDDA5QU0dDZXJ0aWZp
-# Y2F0ZQIQPq5Lu7cXXIRBxhK8e28RTzAJBgUrDgMCGgUAoHgwGAYKKwYBBAGCNwIB
+# BBYEFBtAbZHPZy7a0OlL2qOWjMPp3mpeMA0GCSqGSIb3DQEBCwUAA4IBAQBPev0P
+# uAdc/ENCGp+YrY0pgUZaUsXDBkezz/19D0VtB8QW8DGAOB7AqTo2YU3EeTlJc5US
+# jrBlT7u5CfGprNeLiTgEEDTJm/pF8KsmS4W4XygI7rh85L3WcE6thlblgjZWCpKq
+# YB2Fzc18cIdtKcjuC8NmHyqdlgKlP5cXnB+tG+DqP1yq5a5JYP5Y1CUCHAghmd7Q
+# ePUD7GGzCFIIF3MhjgxcmgmPW1bzAXq5kl/24nEAEr+I6D8dUJX4jgUWVznC0fRX
+# SJqyTYXQXGovyXkpsrreAL5Say1Ob9o7Yg0GXFYR3kuEZYLfO04InBEI5tidCNH9
+# 8Yasi8ZGGSVz6B4uMYIBzjCCAcoCAQEwLTAZMRcwFQYDVQQDDA5QU0dDZXJ0aWZp
+# Y2F0ZQIQepp6/cbp5b5OxHHJUZ01OTAJBgUrDgMCGgUAoHgwGAYKKwYBBAGCNwIB
 # DDEKMAigAoAAoQKAADAZBgkqhkiG9w0BCQMxDAYKKwYBBAGCNwIBBDAcBgorBgEE
-# AYI3AgELMQ4wDAYKKwYBBAGCNwIBFTAjBgkqhkiG9w0BCQQxFgQUzf6sRDMGlyiD
-# XH9XzEDbJ/BbZeMwDQYJKoZIhvcNAQEBBQAEggEAevdPvyiv6t5VXTUDXWRi5pFl
-# Y+nNqgnrpYo2q9NgAwPRTwFUNQBKelHzwHOlCEM9tYoRzdpoGVcFB+yMtKEFrhgG
-# ZIj2r1dbt3RJGXWTOMk8e5h13ZNRQS05hnNlJpT6FgbvGssyJTccvg3lbdRScque
-# LUAI5N1c5fCT2Nl+fBIcxPJanLzwIEvfkv03AKjfOrpltPw3LeaXz+fjUUTMtQpB
-# VR16Ic5mq0N96j2QfFLLQMw2PUQAyg6V3QMkIHV2ZUi4TjdcRYPDEBEI7Ii21HrU
-# tt2WUJ9o8xioijmb3MTb+DJWI4Gw3chVcGbeucCK0dgpvoNAv8PDCeUx47pvew==
+# AYI3AgELMQ4wDAYKKwYBBAGCNwIBFTAjBgkqhkiG9w0BCQQxFgQUwSZejZP2MOA6
+# ij1wbkynXxPdhA8wDQYJKoZIhvcNAQEBBQAEggEAV+g3ZBru4He25vWQOH6NK4Iw
+# BNQBkIkyPkk4tBnGgBeWoyemn5mlSFIRHwkmnY6+HDdOtn8B/TVtMYkqg9UdMkbT
+# Ee/Fgp6JYSpxDZmCuX1gko3StyQk8QJ42MTwj4Zgwp7xyb7Qr3PUPVSrn822MFSp
+# YHnqYm57xhLEzeIFuFUhxhmHyLdOINMlAEJbK/qYi++umCyIOLv9J1rBthQAyuAq
+# GF356zVCeOrcTqe33rHPypqfMC4zSsGD4MbfyW4KDh37gHR8LPOF7RbF91k+fpcl
+# V+dMXzt5t1S+fqB3Avm6JwNZ2sLeBhOCi6Zi5ms+KTl/rAjus7xq9CslOkT5WA==
 # SIG # End signature block
